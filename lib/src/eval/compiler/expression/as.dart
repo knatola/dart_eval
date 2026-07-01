@@ -24,7 +24,12 @@ Variable compileAsExpression(AsExpression e, CompilerContext ctx) {
 
   // Otherwise type-test
   ctx.pushOp(
-    IsType.make(V.scopeFrameOffset, ctx.typeRefIndexMap[slot]!, false),
+    IsType.make(
+      V.scopeFrameOffset,
+      ctx.typeRefIndexMap[slot]!,
+      false,
+      slot.nullable,
+    ),
     IsType.length,
   );
   final vIs = Variable.alloc(

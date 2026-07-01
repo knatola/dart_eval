@@ -710,6 +710,7 @@ class Runtime {
           ...Evc.i16b(op._objectOffset),
           ...Evc.i32b(op._type),
           op._not ? 1 : 0,
+          op._orNull ? 1 : 0,
         ];
       case Assert op:
         return [

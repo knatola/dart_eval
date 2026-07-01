@@ -85,10 +85,21 @@ extension Invoke on Variable {
     }
 
     final AlwaysReturnType? returnType;
+    final isNumReceiver = $this.type.isAssignableTo(
+      ctx,
+      CoreTypes.num.ref(ctx),
+      forceAllowDynamic: false,
+    );
     if ($this.type == CoreTypes.function.ref(ctx) && method == 'call') {
       returnType = null;
     } else if (checkEq || checkNotEq) {
       returnType = AlwaysReturnType(CoreTypes.bool.ref(ctx), false);
+    } else if (isNumReceiver && method == '/') {
+      // Per Dart spec, the / operator on num always returns double.
+      returnType = AlwaysReturnType(CoreTypes.double.ref(ctx), false);
+    } else if (isNumReceiver && method == '~/') {
+      // Per Dart spec, the ~/ operator on num always returns int.
+      returnType = AlwaysReturnType(CoreTypes.int.ref(ctx), false);
     } else {
       returnType = AlwaysReturnType.fromInstanceMethodOrBuiltin(
         ctx,

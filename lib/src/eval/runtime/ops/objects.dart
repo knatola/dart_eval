@@ -386,19 +386,33 @@ class IsType implements EvcOp {
   IsType(Runtime runtime)
     : _objectOffset = runtime._readInt16(),
       _type = runtime._readInt32(),
-      _not = runtime._readUint8() > 0;
+      _not = runtime._readUint8() > 0,
+      _orNull = runtime._readUint8() > 0;
 
   final int _objectOffset;
   final int _type;
   final bool _not;
+  final bool _orNull;
 
-  IsType.make(this._objectOffset, this._type, this._not);
+  IsType.make(
+    this._objectOffset,
+    this._type,
+    this._not, [
+    this._orNull = false,
+  ]);
 
-  static int length = Evc.BASE_OPLEN + Evc.I16_LEN + Evc.I32_LEN + Evc.I8_LEN;
+  static int length =
+      Evc.BASE_OPLEN + Evc.I16_LEN + Evc.I32_LEN + Evc.I8_LEN + Evc.I8_LEN;
 
   @override
   void run(Runtime runtime) {
-    final value = runtime.frame[_objectOffset] as $Value;
+    final raw = runtime.frame[_objectOffset];
+    // When testing against a nullable target, null (or $null) is a match.
+    if (_orNull && (raw == null || raw is $null)) {
+      runtime.frame[runtime.frameOffset++] = _not ? false : true;
+      return;
+    }
+    final value = raw as $Value;
     final type = value.$getRuntimeType(runtime);
     if (type < 0) {
       final result = type == _type;
