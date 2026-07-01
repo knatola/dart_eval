@@ -1004,7 +1004,7 @@ class $Iterable<E> implements Iterable<E>, $Instance {
     final $this = target?.$value as Iterable;
     final combine = args[0] as EvalCallable;
     final $result = $this.reduce(
-      (value, element) => combine.call(runtime, null, [value, element]),
+      (value, element) => combine.call(runtime, null, [value, element])!,
     );
     return $result;
   }
