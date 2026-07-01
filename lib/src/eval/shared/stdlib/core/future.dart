@@ -14,6 +14,21 @@ class $Future<T> implements Future<T>, $Instance {
       'Future.delayed',
       const _$Future_delayed().call,
     );
+    runtime.registerBridgeFunc(
+      'dart:core',
+      'Future.value',
+      const _$Future_value().call,
+    );
+    runtime.registerBridgeFunc(
+      'dart:core',
+      'Future.forEach',
+      const _$Future_forEach().call,
+    );
+    runtime.registerBridgeFunc(
+      'dart:core',
+      'Future.wait',
+      const _$Future_wait().call,
+    );
   }
 
   static const $declaration = BridgeClassDef(
@@ -26,6 +41,22 @@ class $Future<T> implements Future<T>, $Instance {
             BridgeParameter(
               'duration',
               BridgeTypeAnnotation($Duration.$type),
+              false,
+            ),
+          ],
+          namedParams: [],
+        ),
+      ),
+      'value': BridgeConstructorDef(
+        BridgeFunctionDef(
+          returns: BridgeTypeAnnotation(BridgeTypeRef(CoreTypes.future)),
+          params: [
+            BridgeParameter(
+              'value',
+              BridgeTypeAnnotation(
+                BridgeTypeRef(CoreTypes.object),
+                nullable: true,
+              ),
               false,
             ),
           ],
@@ -46,6 +77,39 @@ class $Future<T> implements Future<T>, $Instance {
           ],
           namedParams: [],
         ),
+      ),
+      'forEach': BridgeMethodDef(
+        BridgeFunctionDef(
+          returns: BridgeTypeAnnotation(BridgeTypeRef(CoreTypes.future)),
+          params: [
+            BridgeParameter(
+              'elements',
+              BridgeTypeAnnotation(BridgeTypeRef(CoreTypes.iterable)),
+              false,
+            ),
+            BridgeParameter(
+              'action',
+              BridgeTypeAnnotation(BridgeTypeRef(CoreTypes.function)),
+              false,
+            ),
+          ],
+          namedParams: [],
+        ),
+        isStatic: true,
+      ),
+      'wait': BridgeMethodDef(
+        BridgeFunctionDef(
+          returns: BridgeTypeAnnotation(BridgeTypeRef(CoreTypes.future)),
+          params: [
+            BridgeParameter(
+              'futures',
+              BridgeTypeAnnotation(BridgeTypeRef(CoreTypes.iterable)),
+              false,
+            ),
+          ],
+          namedParams: [],
+        ),
+        isStatic: true,
       ),
     },
     getters: {},
@@ -120,5 +184,50 @@ class _$Future_delayed implements EvalCallable {
   @override
   $Value? call(Runtime runtime, $Value? target, List<$Value?> args) {
     return $Future.wrap(Future.delayed(args[0]!.$value));
+  }
+}
+
+class _$Future_value implements EvalCallable {
+  const _$Future_value();
+
+  @override
+  $Value? call(Runtime runtime, $Value? target, List<$Value?> args) {
+    final value = args[0];
+    final raw = value is $Value ? value.$value : value;
+    // Wrap collections so await yields a $Value (e.g. $List), not a raw List.
+    return $Future.wrap(Future.value(runtime.wrap(raw)));
+  }
+}
+
+class _$Future_forEach implements EvalCallable {
+  const _$Future_forEach();
+
+  @override
+  $Value? call(Runtime runtime, $Value? target, List<$Value?> args) {
+    final elements = (args[0]!.$value as Iterable).toList();
+    final action = args[1] as EvalCallable;
+    return $Future.wrap(
+      Future.forEach(elements, (element) {
+        final result = action.call(runtime, null, [
+          element is $Value ? element : runtime.wrap(element),
+        ]);
+        return result is $Value ? result.$value : result;
+      }),
+    );
+  }
+}
+
+class _$Future_wait implements EvalCallable {
+  const _$Future_wait();
+
+  @override
+  $Value? call(Runtime runtime, $Value? target, List<$Value?> args) {
+    final futures = (args[0]!.$value as Iterable)
+        .map((f) => f is $Future ? f.$value : Future.value(f))
+        .toList();
+    // Wrap the result List so await yields a $List ($Instance), not a raw List.
+    return $Future.wrap(
+      Future.wait(futures).then((results) => runtime.wrap(results)),
+    );
   }
 }
