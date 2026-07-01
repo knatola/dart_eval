@@ -75,8 +75,11 @@ Variable compileMethodInvocation(
       : compileIdentifier(e.methodName, ctx);
 
   if (method.callingConvention == CallingConvention.dynamic ||
-      (method.type == CoreTypes.function.ref(ctx) &&
+      ((method.type == CoreTypes.function.ref(ctx) ||
+              method.type == CoreTypes.dynamic.ref(ctx)) &&
           method.methodOffset == null)) {
+    // A variable (methodOffset == null) holding a function value — including a
+    // dynamically-typed one returned from a call — is invoked as a closure.
     return invokeClosure(ctx, null, method, e.argumentList).result;
   }
 
