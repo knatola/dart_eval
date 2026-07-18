@@ -236,7 +236,7 @@ class $Map<K, V> implements Map<K, V>, $Instance {
   ) {
     final idx = args[0]!;
     final map = target!.$value as Map;
-    return map[idx];
+    return map[idx] ?? const $null();
   }
 
   static const $Function __indexSet = $Function(_indexSet);

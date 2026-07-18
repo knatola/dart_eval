@@ -1,5 +1,9 @@
 import 'package:dart_eval/dart_eval.dart';
 import 'package:dart_eval/dart_eval_bridge.dart';
+import 'package:dart_eval/src/eval/shared/stdlib/core/base.dart';
+import 'package:dart_eval/src/eval/shared/stdlib/core/collection.dart';
+import 'package:dart_eval/src/eval/shared/stdlib/core/future.dart';
+import 'package:dart_eval/src/eval/shared/stdlib/core/num.dart';
 import 'package:test/test.dart';
 
 /// Regression tests for num/double type-coercion and nullable-cast fixes:
@@ -181,5 +185,81 @@ void main() {
         );
       },
     );
+  });
+
+  test('bridged async named-argument query values cast to num', () async {
+    final runtime = compiler.compileWriteAndLoad({
+      'example': {
+        'main.dart': '''
+          Function tool = (name, args) {};
+
+          Future<dynamic> metric_query({
+            required List<String> metrics,
+            Map<String, dynamic>? dateRange,
+            List<Map<String, dynamic>>? filters,
+            String? rollupType,
+            String? rollupTimeframe,
+            int? limit,
+            String? orderBy,
+            String? orderDirection,
+          }) async {
+            final args = <String, dynamic>{};
+            args['metrics'] = metrics;
+            if (dateRange != null) args['dateRange'] = dateRange;
+            if (filters != null) args['filters'] = filters;
+            if (rollupType != null) args['rollupType'] = rollupType;
+            if (rollupTimeframe != null) args['rollupTimeframe'] = rollupTimeframe;
+            if (limit != null) args['limit'] = limit;
+            if (orderBy != null) args['orderBy'] = orderBy;
+            if (orderDirection != null) args['orderDirection'] = orderDirection;
+            return await tool('metric_query', args);
+          }
+
+          Future<Map<String, dynamic>> userMain() async {
+            final rows = await metric_query(metrics: ['integer', 'decimal']);
+            final validRows = <Map<String, dynamic>>[];
+            for (final row in rows) {
+              if (row['integer'] != null && row['decimal'] != null) {
+                validRows.add(row);
+              }
+            }
+
+            num total = 0;
+            for (final row in validRows) {
+              final integer = row['integer'] as num;
+              final decimal = row['decimal'] as num;
+              total += integer + decimal;
+            }
+            return {'total': total};
+          }
+
+          dynamic runMain(Function callback) async {
+            tool = callback;
+            return await userMain();
+          }
+        ''',
+      },
+    });
+    final rows = $List.wrap([
+      $Map.wrap({
+        $String('integer'): $int(42),
+        $String('decimal'): $double(0.5),
+      }),
+      $Map.wrap({$String('integer'): $int(7)}),
+      $Map.wrap({
+        $String('integer'): $int(8),
+        $String('decimal'): $double(1.5),
+      }),
+    ]);
+    final callback = $Closure((runtime, target, args) {
+      return $Future.wrap(Future.value(rows));
+    });
+
+    final result = runtime.executeLib('package:example/main.dart', 'runMain', [
+      callback,
+    ]);
+    expect(result, isA<$Future>());
+    final value = await (result as $Future).$value as $Map;
+    expect(asNum(value.$value[$String('total')]), 52);
   });
 }
