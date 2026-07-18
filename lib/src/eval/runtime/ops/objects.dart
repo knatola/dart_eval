@@ -407,9 +407,12 @@ class IsType implements EvcOp {
   @override
   void run(Runtime runtime) {
     final raw = runtime.frame[_objectOffset];
-    // When testing against a nullable target, null (or $null) is a match.
-    if (_orNull && (raw == null || raw is $null)) {
-      runtime.frame[runtime.frameOffset++] = _not ? false : true;
+    // Bridge methods may represent null as either native null or $null.
+    // Both must follow Dart's type-test semantics instead of being cast to
+    // $Value below.
+    if (raw == null || raw is $null) {
+      final result = _orNull;
+      runtime.frame[runtime.frameOffset++] = _not ? !result : result;
       return;
     }
     final value = raw as $Value;

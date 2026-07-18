@@ -23,7 +23,12 @@ Variable compileIsExpression(IsExpression e, CompilerContext ctx) {
 
   /// Otherwise do a runtime test
   ctx.pushOp(
-    IsType.make(V.scopeFrameOffset, ctx.typeRefIndexMap[slot]!, not),
+    IsType.make(
+      V.scopeFrameOffset,
+      ctx.typeRefIndexMap[slot]!,
+      not,
+      slot.nullable,
+    ),
     IsType.length,
   );
   return Variable.alloc(ctx, CoreTypes.bool.ref(ctx).copyWith(boxed: false));

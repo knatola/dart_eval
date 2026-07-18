@@ -154,4 +154,32 @@ void main() {
       );
     });
   });
+
+  group('null is T', () {
+    test(
+      'missing map value follows nullable and non-nullable type semantics',
+      () {
+        final runtime = compiler.compileWriteAndLoad({
+          'example': {
+            'main.dart': '''
+            int main() {
+              final m = <String, dynamic>{};
+              var result = 0;
+              if (m['x'] is num) result += 1;
+              if (m['x'] is! num) result += 2;
+              if (m['x'] is num?) result += 4;
+              if (m['x'] is! num?) result += 8;
+              return result;
+            }
+          ''',
+          },
+        });
+
+        expect(
+          asNum(runtime.executeLib('package:example/main.dart', 'main')),
+          6,
+        );
+      },
+    );
+  });
 }
